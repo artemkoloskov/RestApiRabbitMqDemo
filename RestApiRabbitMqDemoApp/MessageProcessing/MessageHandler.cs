@@ -38,7 +38,7 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 			if (Environment.GetEnvironmentVariable("RabbitMq/Host") is null ||
 				Environment.GetEnvironmentVariable("RabbitMq/Host") == "")
 			{
-				_hostName = _configuration["HostName"];
+				_hostName = _configuration["RabbitHostName"];
 			}
 			else
 			{
