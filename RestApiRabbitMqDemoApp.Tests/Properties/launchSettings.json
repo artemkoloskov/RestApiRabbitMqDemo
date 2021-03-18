@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "RestApiRabbitMqDemoApp.Tests": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}
