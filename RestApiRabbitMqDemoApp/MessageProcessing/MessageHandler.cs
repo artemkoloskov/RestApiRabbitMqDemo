@@ -14,7 +14,8 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 {
 	/// <summary>
 	/// Бэкгрунд сервис слушающий очередь RabbitMQ, и обрабатывающий сообщения
-	/// из нее, при поступлении
+	/// из нее, при поступлении. После обработки - заносит обработанные сообщения в синглтон
+	/// из которого контроллер будет искать свой ответ.
 	/// </summary>
 	public class MessageHandler : BackgroundService
 	{

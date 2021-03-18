@@ -15,7 +15,7 @@ namespace RestApiRabbitMqDemoApp.Controllers
 	{
 		private readonly ILogger<MessagesController> _logger;
 		private readonly IMessageReceiver _messageReceiver;
-		private readonly Sender _sender = new("localhost", "restQueue");
+		private readonly Sender _sender;
 		private readonly IConfiguration _configuration;
 		private readonly string _hostMame;
 		private readonly string _queueName;
@@ -40,10 +40,12 @@ namespace RestApiRabbitMqDemoApp.Controllers
 		{
 			DateTime handlingStartTime = DateTime.Now;
 
-			_sender.SendMessage(message);
+			_sender.SendMessage(message); //Сообщение отправляется в очередь.
 
 			TimeSpan timeToHandle = DateTime.Now - handlingStartTime;
 
+			// Ожидаем возврата сообщения из очереди и его обарботки,
+			// либо отсечки по таймауту
 			while (
 				(_messageReceiver.HandledMessages is null ||
 				!_messageReceiver.HandledMessages.Where(m => m.Id == message.Id).Any()) &&
@@ -52,6 +54,8 @@ namespace RestApiRabbitMqDemoApp.Controllers
 				timeToHandle = DateTime.Now - handlingStartTime;
 			}
 
+			// Если за время до тайм-аута ответ из очереди не был получен
+			// возвращаем статус RequestTimeOut
 			if (_messageReceiver.HandledMessages is null || !_messageReceiver.HandledMessages.Where(m => m.Id == message.Id).Any())
 			{
 				return StatusCode(408);
@@ -59,8 +63,16 @@ namespace RestApiRabbitMqDemoApp.Controllers
 
 			timeToHandle = DateTime.Now - handlingStartTime;
 
-			Response response = new() { Message = _messageReceiver.HandledMessages.Where(m => m.Id == message.Id).FirstOrDefault(), TimeToHandle = timeToHandle.TotalSeconds };
+			// Если ответ получен, записываем его в объект ответа, с временем затраченным на обработку
+			Response response = new()
+			{
+				Message = _messageReceiver.HandledMessages
+					.Where(m => m.Id == message.Id).FirstOrDefault(),
+				TimeToHandle = timeToHandle.TotalSeconds
+			};
 
+			//Возвращаем статус ок, с ответом на запрос, содержащим обработанное сообщение и время, затраченное
+			//на обработку
 			return Ok(response);
 		}
 	}
