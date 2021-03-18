@@ -6,6 +6,18 @@
 	/// </summary>
 	public class Response
 	{
+		public Response()
+		{
+
+		}
+
+		public Response(Message message, double timeToHandle)
+		{
+			Message = message;
+
+			TimeToHandle = timeToHandle;
+		}
+
 		public Message Message { get; set; }
 		public double TimeToHandle { get; set; }
 	}

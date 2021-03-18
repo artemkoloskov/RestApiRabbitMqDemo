@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -32,8 +33,6 @@ namespace RestApiRabbitMqDemoApp.Controllers
 			_sender = new(_hostMame, _queueName);
 
 			_messageReceiver = messageReceiver;
-
-			_messageReceiver.HandledMessage = null;
 		}
 
 		[HttpPost]
@@ -46,20 +45,21 @@ namespace RestApiRabbitMqDemoApp.Controllers
 			TimeSpan timeToHandle = DateTime.Now - handlingStartTime;
 
 			while (
-				_messageReceiver.HandledMessage is null && 
+				(_messageReceiver.HandledMessages is null ||
+				!_messageReceiver.HandledMessages.Where(m => m.Id == message.Id).Any()) &&
 				timeToHandle.TotalMilliseconds < double.Parse(_configuration["MessageHandlingTimeout"]))
 			{
 				timeToHandle = DateTime.Now - handlingStartTime;
 			}
 
-			if (_messageReceiver.HandledMessage is null)
+			if (_messageReceiver.HandledMessages is null || !_messageReceiver.HandledMessages.Where(m => m.Id == message.Id).Any())
 			{
 				return StatusCode(408);
 			}
 
 			timeToHandle = DateTime.Now - handlingStartTime;
-			
-			Response response = new() { Message = _messageReceiver.HandledMessage, TimeToHandle = timeToHandle.TotalSeconds };
+
+			Response response = new() { Message = _messageReceiver.HandledMessages.Where(m => m.Id == message.Id).FirstOrDefault(), TimeToHandle = timeToHandle.TotalSeconds };
 
 			return Ok(response);
 		}

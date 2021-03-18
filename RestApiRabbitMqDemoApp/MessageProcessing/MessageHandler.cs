@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +21,7 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 		private IModel _channel;
 		private IConnection _connection;
 		private readonly IConfiguration _configuration;
- 		private readonly IMessageReceiver _messageReceiver;
+		private readonly IMessageReceiver _messageReceiver;
 		private readonly string _hostMame;
 		private readonly string _queueName;
 
@@ -30,7 +32,7 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 			_configuration = configuration;
 
 			_hostMame = _configuration["HostName"];
-			
+
 			_queueName = _configuration["QueueName"];
 
 			InitializeListener();
@@ -41,8 +43,6 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 			ConnectionFactory factory = new()
 			{
 				HostName = _hostMame,
-				UserName = "guest",
-				Password = "guest"
 			};
 
 			_connection = factory.CreateConnection();
@@ -66,11 +66,17 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 			consumer.Received += (ch, ea) =>
 			{
 				string content = Encoding.UTF8.GetString(ea.Body.ToArray());
+
 				Message messageFromQueue = JsonSerializer.Deserialize<Message>(content);
 
-				HandleMessage(messageFromQueue);
+				_messageReceiver.HandledMessages ??= new List<Message>();
 
-				_messageReceiver.HandledMessage = messageFromQueue;
+				if (!_messageReceiver.HandledMessages.Where(m => m.Id == messageFromQueue.Id).Any())
+				{
+					HandleMessage(messageFromQueue);
+
+					((List<Message>)_messageReceiver.HandledMessages).Add(messageFromQueue);
+				}
 
 				_channel.BasicAck(
 					deliveryTag: ea.DeliveryTag,
@@ -93,6 +99,11 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 		/// <param name="message"></param>
 		private static void HandleMessage(Message message)
 		{
+			if (message.Body is null)
+			{
+				return;
+			}
+
 			int dots = message.Body.Split('.').Length - 1;
 
 			Thread.Sleep(dots * 1000);

@@ -1,4 +1,5 @@
 ﻿using RestApiRabbitMqDemoApp.Domain;
+using System.Collections.Generic;
 
 namespace RestApiRabbitMqDemoApp.MessageProcessing
 {
@@ -8,6 +9,6 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 	/// </summary>
 	public interface IMessageReceiver
 	{
-		Message HandledMessage { get; set; }
+		IEnumerable<Message> HandledMessages { get; set; }
 	}
 }

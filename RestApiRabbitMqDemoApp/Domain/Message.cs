@@ -8,7 +8,7 @@ namespace RestApiRabbitMqDemoApp.Domain
 	public class Message
 	{
 		public Guid Id { get; set; }
-		public string Body { get; set; }
+		public string Body { get; set; } = "";
 
 		public Message()
 		{
