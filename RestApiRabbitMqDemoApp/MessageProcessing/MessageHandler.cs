@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -23,8 +24,10 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 		private IConnection _connection;
 		private readonly IConfiguration _configuration;
 		private readonly IMessageReceiver _messageReceiver;
-		private readonly string _hostMame;
+		private readonly string _hostName;
 		private readonly string _queueName;
+		private readonly string _userName;
+		private readonly string _password;
 
 		public MessageHandler(IMessageReceiver messageReceiver, IConfiguration configuration)
 		{
@@ -32,7 +35,35 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 
 			_configuration = configuration;
 
-			_hostMame = _configuration["HostName"];
+			if (Environment.GetEnvironmentVariable("RabbitMq/Host") is null ||
+				Environment.GetEnvironmentVariable("RabbitMq/Host") == "")
+			{
+				_hostName = _configuration["HostName"];
+			}
+			else
+			{
+				_hostName = Environment.GetEnvironmentVariable("RabbitMq/Host");
+			}
+
+			if (Environment.GetEnvironmentVariable("RabbitMq/UserName") is null ||
+				Environment.GetEnvironmentVariable("RabbitMq/UserName") == "")
+			{
+				_userName = _configuration["RabbitUserName"];
+			}
+			else
+			{
+				_userName = Environment.GetEnvironmentVariable("RabbitMq/UserName");
+			}
+
+			if (Environment.GetEnvironmentVariable("RabbitMq/Password") is null ||
+				Environment.GetEnvironmentVariable("RabbitMq/Password") == "")
+			{
+				_password = _configuration["Password"];
+			}
+			else
+			{
+				_password = Environment.GetEnvironmentVariable("RabbitMq/Password");
+			}
 
 			_queueName = _configuration["QueueName"];
 
@@ -43,7 +74,9 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 		{
 			ConnectionFactory factory = new()
 			{
-				HostName = _hostMame,
+				HostName = _hostName,
+				UserName = _userName,
+				Password = _password,
 			};
 
 			_connection = factory.CreateConnection();
@@ -68,7 +101,12 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 			{
 				string content = Encoding.UTF8.GetString(ea.Body.ToArray());
 
-				Message messageFromQueue = JsonSerializer.Deserialize<Message>(content);
+				JsonSerializerOptions options = new JsonSerializerOptions
+				{
+					PropertyNameCaseInsensitive = true,
+				};
+
+				Message messageFromQueue = JsonSerializer.Deserialize<Message>(content, options);
 
 				_messageReceiver.HandledMessages ??= new List<Message>();
 

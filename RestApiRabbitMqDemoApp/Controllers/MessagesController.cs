@@ -17,8 +17,10 @@ namespace RestApiRabbitMqDemoApp.Controllers
 		private readonly IMessageReceiver _messageReceiver;
 		private readonly Sender _sender;
 		private readonly IConfiguration _configuration;
-		private readonly string _hostMame;
+		private readonly string _hostName;
 		private readonly string _queueName;
+		private readonly string _userName;
+		private readonly string _password;
 
 		public MessagesController(ILogger<MessagesController> logger, IMessageReceiver messageReceiver, IConfiguration configuration)
 		{
@@ -26,11 +28,39 @@ namespace RestApiRabbitMqDemoApp.Controllers
 
 			_logger = logger;
 
-			_hostMame = _configuration["HostName"];
+			if (Environment.GetEnvironmentVariable("RabbitMq/Host") is null ||
+				Environment.GetEnvironmentVariable("RabbitMq/Host") == "")
+			{
+				_hostName = _configuration["HostName"];
+			}
+			else
+			{
+				_hostName = Environment.GetEnvironmentVariable("RabbitMq/Host");
+			}
+
+			if (Environment.GetEnvironmentVariable("RabbitMq/UserName") is null ||
+				Environment.GetEnvironmentVariable("RabbitMq/UserName") == "")
+			{
+				_userName = _configuration["RabbitUserName"];
+			}
+			else
+			{
+				_userName = Environment.GetEnvironmentVariable("RabbitMq/UserName");
+			}
+
+			if (Environment.GetEnvironmentVariable("RabbitMq/Password") is null ||
+				Environment.GetEnvironmentVariable("RabbitMq/Password") == "")
+			{
+				_password = _configuration["Password"];
+			}
+			else
+			{
+				_password = Environment.GetEnvironmentVariable("RabbitMq/Password");
+			}
 
 			_queueName = _configuration["QueueName"];
 
-			_sender = new(_hostMame, _queueName);
+			_sender = new(_hostName, _queueName, _userName, _password);
 
 			_messageReceiver = messageReceiver;
 		}
@@ -48,7 +78,7 @@ namespace RestApiRabbitMqDemoApp.Controllers
 			// либо отсечки по таймауту
 			while (
 				(_messageReceiver.HandledMessages is null ||
-				!_messageReceiver.HandledMessages.Where(m => m.Id == message.Id).Any()) &&
+				!_messageReceiver.HandledMessages.Where(m => m is not null && m.Id == message.Id).Any()) &&
 				timeToHandle.TotalMilliseconds < double.Parse(_configuration["MessageHandlingTimeout"]))
 			{
 				timeToHandle = DateTime.Now - handlingStartTime;
@@ -70,6 +100,8 @@ namespace RestApiRabbitMqDemoApp.Controllers
 					.Where(m => m.Id == message.Id).FirstOrDefault(),
 				TimeToHandle = timeToHandle.TotalSeconds
 			};
+
+			((List<Message>)_messageReceiver.HandledMessages).Remove(response.Message);
 
 			//Возвращаем статус ок, с ответом на запрос, содержащим обработанное сообщение и время, затраченное
 			//на обработку

@@ -27,8 +27,8 @@ namespace RestApiRabbitMqDemoApp.Tests
 		public MessagesControllerTests()
 		{
 			// Arrange
-			string projectDir = "C:\\Users\\artem\\source\\repos\\RestApiRabbitMqDemo\\RestApiRabbitMqDemoApp";
-
+			string projectDir = typeof(MessagesController).Assembly.Location.Split('.')[0];
+			
 			_server = new TestServer(new WebHostBuilder().UseContentRoot(projectDir)
 				.UseEnvironment("Development")
 				.UseConfiguration(new ConfigurationBuilder()

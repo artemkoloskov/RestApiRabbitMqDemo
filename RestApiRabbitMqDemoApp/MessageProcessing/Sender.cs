@@ -13,13 +13,17 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 	{
 		private readonly string _hostName;
 		private readonly string _queueName;
+		private readonly string _userName;
+		private readonly string _password;
 
 		private IConnection _connection;
 
-		public Sender(string hostName, string queueName)
+		public Sender(string hostName, string queueName, string userName, string password)
 		{
 			_queueName = queueName;
 			_hostName = hostName;
+			_userName = userName;
+			_password = password;
 
 			CreateConnection();
 		}
@@ -54,7 +58,9 @@ namespace RestApiRabbitMqDemoApp.MessageProcessing
 			{
 				ConnectionFactory factory = new()
 				{
-					HostName = _hostName
+					HostName = _hostName,
+					UserName = _userName,
+					Password = _password,
 				};
 
 				_connection = factory.CreateConnection();
